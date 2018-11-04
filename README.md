@@ -4,7 +4,6 @@ In order to run this demo, install the Firebase CLI and start in development mod
 
 ```
 $ npm install -g firebase-tools
-$ firebase init    # Generate a firebase.json (REQUIRED)
 $ firebase serve   # Start development server
 ```
 

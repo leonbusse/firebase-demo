@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Firebase Demo</title>
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+    <link rel="stylesheet" href="./style.css">
+    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/5.5.5/firebase.js"></script>
+
+    <script>
+
+
+      // initialize firebase
+
+      let config = {
+        apiKey: "AIzaSyAmKKWKrg-bHwXTnv-6G7YxeMJsC7AO4VE",
+        authDomain: "fir-demo-7a135.firebaseapp.com",
+        databaseURL: "https://fir-demo-7a135.firebaseio.com",
+        projectId: "fir-demo-7a135",
+        storageBucket: "fir-demo-7a135.appspot.com",
+        messagingSenderId: "184225316227"
+      };
+      firebase.initializeApp(config);
+
+
+      // initialize UI
+
+      let textUserId;
+      let textMessage;
+      let textFirst;
+      let textLast;
+      let textMail;
+      let textPhone;
+
+      document.addEventListener('DOMContentLoaded', function() {
+        try {
+          let app = firebase.app();
+          let features = ['auth', 'database', 'messaging', 'storage'].filter(feature => typeof app[feature] === 'function');
+          document.getElementById('message').innerHTML = `Firebase SDK loaded with ${features.join(', ')}`;
+        } catch (e) {
+          console.error(e);
+          document.getElementById('message').innerHTML = 'Error loading the Firebase SDK, check the console.';
+        }
+
+        textUserId = document.getElementById('userId');
+        textMessage = document.getElementById('message');
+        textFirst = document.getElementById('first');
+        textLast = document.getElementById('last');
+        textMail = document.getElementById('email');
+        textPhone = document.getElementById('phone');
+
+        
+        // UI interactions
+
+        document.getElementById('create').addEventListener('click', function() {
+          createUser(textUserId.value, textFirst.value, textLast.value, textMail.value, textPhone.value, function(error) {
+            let msg = "";
+            if (error) {
+              msg = "An error occurred while trying to create a user.";
+            } else {
+              msg = "Successfully created user.";
+            }
+            console.log(msg);
+            textMessage.innerHTML = msg;
+          });
+        });
+
+        document.getElementById('read').addEventListener('click', function() {
+          readUser(textUserId.value, function(snapshot) {
+            let msg = "Successfully read user data.";
+
+            if(snapshot.val()) {
+              clearInputs();
+
+              if(snapshot) {
+                textUserId.parentNode.MaterialTextfield.change(snapshot.key);
+              }
+              if(snapshot.val().firstName) {
+                textFirst.parentNode.MaterialTextfield.change(snapshot.val().firstName);
+              }
+              if(snapshot.val().lastName) {
+                textLast.parentNode.MaterialTextfield.change(snapshot.val().lastName);
+              }
+              if(snapshot.val().email) {
+                textMail.parentNode.MaterialTextfield.change(snapshot.val().email);
+              }
+              if(snapshot.val().phone) {
+                textPhone.parentNode.MaterialTextfield.change(snapshot.val().phone);
+              }
+            } else {
+              msg = 'User does not exist.';
+            }
+            console.log(msg);
+            textMessage.innerHTML = msg;
+          });
+        });
+
+        document.getElementById('update').addEventListener('click', function() {
+          updateUser(textUserId.value, textFirst.value, textLast.value, textMail.value, textPhone.value, function(error) {
+            let msg = "";
+            if (error) {
+              msg = "An error occurred while trying to update a user.";
+            } else {
+              msg = "Successfully updated user.";
+            }
+            console.log(msg);
+            textMessage.innerHTML = msg;
+          });
+        });
+
+        document.getElementById('delete').addEventListener('click', function() {
+          deleteUser(textUserId.value, function(error) {
+            let msg = "";
+            if (error) {
+              msg = "An error occurred while trying to delete a user.";
+            } else {
+              msg = "Successfully deleted user.";
+            }
+            console.log(msg);
+            textMessage.innerHTML = msg;
+          });
+        });
+
+        document.getElementById('addcallback').addEventListener('click', function() {
+          addDataCallback('test', function(snapshot) {
+            console.log('Listener on user "%s" was triggered.', snapshot.key);
+            
+          });
+        });
+
+        document.getElementById('clear').addEventListener('click', function() {
+          clearInputs();
+        });
+
+
+      });
+
+      function clearInputs() {
+        textUserId.parentNode.MaterialTextfield.change('');
+        textFirst.parentNode.MaterialTextfield.change('');
+        textLast.parentNode.MaterialTextfield.change('');
+        textMail.parentNode.MaterialTextfield.change('');
+        textPhone.parentNode.MaterialTextfield.change('');
+      }
+
+
+      // database interactions
+
+      function createUser(userId, firstName, lastName, email, phone, callback) {
+        console.log("Creating user..");
+        let usersRef = firebase.database().ref('users');
+        let userRef;
+        if(userId) {
+          userRef = usersRef.child(userId);
+        } else {
+          console.log("no ID provided, generating new ID");
+          userRef = usersRef.push();
+        }
+        userRef.set({
+          firstName: firstName,
+          lastName: lastName,
+          email: email,
+          phone: phone
+        }, callback);
+      }
+
+      function readUser(userId, callback) {
+        console.log("Reading user..");
+        if(userId) {
+          firebase.database().ref('users').child(userId).once('value', callback);
+        } else {
+          console.log("No ID provided, aborting.");
+        }
+      }
+
+      function updateUser(userId, firstName, lastName, email, phone, callback) {
+        console.log("Updating user..");
+        if(userId) {
+          let updates = {};
+          updates['/users/' + userId] = {
+            firstName: firstName,
+            lastName: lastName,
+            email: email,
+            phone: phone
+          };
+          firebase.database().ref().update(updates, callback);
+        } else {
+          console.log("No ID provided, aborting.");
+        }
+      }
+
+      function deleteUser(userId, callback) {
+        console.log("Deleting user..");
+        firebase.database().ref('users').child(userId).remove(callback);
+      }
+
+      function addDataCallback(userId, callback) {
+        firebase.database().ref('users').child(userId).on('value', callback);
+      }
+
+    </script>
+  </head>
+  <body>
+
+    <div class="demo-layout mdl-layout mdl-layout--fixed-header mdl-js-layout mdl-color--grey-100">
+      <header class="demo-header mdl-layout__header mdl-layout__header--scroll mdl-color--grey-100 mdl-color-text--grey-800">
+        <div class="mdl-layout__header-row">
+          <span class="mdl-layout-title">Firebase Demo</span>
+        </div>
+      </header>
+      <div class="demo-ribbon"></div>
+      <main class="demo-main mdl-layout__content">
+        <div class="demo-container mdl-grid">
+
+          <div class="mdl-cell mdl-cell--2-col mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
+          <div class="demo-content mdl-color--white mdl-shadow--4dp content mdl-color-text--grey-800 mdl-cell mdl-cell--8-col">
+            <div class="mdl-card__title">
+              <h1 class="mdl-card__title-text">CRUD Example</h1>
+            </div>
+            <div class="mdl-card__supporting-text">
+
+              <div id="message"></div>
+
+              <div style="height: 50px;"></div>
+
+              <form action="#">
+                <div id="id">
+                  <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                    <input class="mdl-textfield__input" type="text" id="userId">
+                    <label class="mdl-textfield__label" for="userId">ID</label>
+                  </div>
+                </div>
+
+                <div id="name">
+                  <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                    <input class="mdl-textfield__input" type="text" id="first">
+                    <label class="mdl-textfield__label" for="first">First Name</label>
+                  </div>
+                  <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                    <input class="mdl-textfield__input" type="text" id="last">
+                    <label class="mdl-textfield__label" for="last">Last Name</label>
+                  </div>
+                </div>
+
+                <div id="contact">
+                  <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                    <input class="mdl-textfield__input" type="text" id="email">
+                    <label class="mdl-textfield__label" for="email">E-mail</label>
+                  </div>
+                  <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                    <input class="mdl-textfield__input" type="text" id="phone">
+                    <label class="mdl-textfield__label" for="phone">Phone</label>
+                  </div>
+                </div>
+              </form>
+
+              <div style="height: 50px;"></div>
+
+              <div class="">
+                <button id="create" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored mdl-cell">Create</button>
+                <button id="read" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored mdl-cell">Read</button>
+                <button id="update" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored mdl-cell">Update</button>
+                <button id="delete" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored mdl-cell">Delete</button>
+                <button id="addcallback" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored mdl-cell">Add Callback</button>
+                <button id="clear" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored mdl-cell">Clear</button>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+        <footer class="demo-footer mdl-mini-footer">
+          <div class="mdl-mini-footer--left-section">
+            <ul class="mdl-mini-footer--link-list">
+              <li><a href="#">Help</a></li>
+              <li><a href="#">Privacy and Terms</a></li>
+              <li><a href="#">More Footer Stuff</a></li>
+            </ul>
+          </div>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>
